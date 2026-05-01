@@ -1,0 +1,4 @@
+# git-hop configuration
+
+# ntfy.sh channel for push/pull notifications (optional)
+#NTFY_CHANNEL=your-channel

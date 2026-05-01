@@ -1,0 +1,12 @@
+[Unit]
+Description=git-hop: sync git repositories at login/logout
+
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=%h/.local/bin/git-hop pull
+ExecStop=%h/.local/bin/git-hop push
+
+[Install]
+WantedBy=default.target
