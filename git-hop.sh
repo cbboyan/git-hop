@@ -107,8 +107,11 @@ push() {
    log_info "push: $REPO"
    cd "$REPO" || { log_err "push: repo not found: $REPO"; return 1; }
 
-   git add -q . 2>/dev/null
-   git commit -q -a -m "git-hop $HOSTNAME" >/dev/null 2>&1
+   git add . 2>/dev/null
+   if [ -n "`git status --porcelain`" ]; then
+      git commit -q -a -m "git-hop $HOSTNAME" >/dev/null \
+         || { log_err "push: commit failed in $REPO"; return 1; }
+   fi
 
    STATE=`fetch` || { log_ntfy_err "no network — changes committed locally in $REPO"; return 1; }
    log_info "push: $STATE in $REPO"
