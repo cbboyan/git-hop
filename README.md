@@ -49,9 +49,13 @@ Then subscribe to that channel in the ntfy app or browser. Notifications include
 
 ## Installation
 
+No root required — `git-hop` installs entirely under your home directory as a systemd user service.
+
 ```sh
-make install   # install binary and service file
-make enable    # enable lingering, enable and start the service
+git clone https://github.com/cbboyan/git-hop.git
+cd git-hop
+make install   # installs to ~/.local/bin/ and ~/.config/systemd/user/
+make enable    # enables lingering and starts the service
 ```
 
 See [INSTALL.md](INSTALL.md) for troubleshooting and all Makefile targets.
