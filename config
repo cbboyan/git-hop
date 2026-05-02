@@ -1,4 +1,7 @@
 # git-hop configuration
 
 # ntfy.sh channel for push/pull notifications (optional)
-#NTFY_CHANNEL=your-channel
+#GITHOP_NTFY_CHANNEL=your-channel
+
+# debug log file (optional)
+#GITHOP_DEBUG_LOG=$HOME/git-hop.log
