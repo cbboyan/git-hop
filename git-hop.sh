@@ -50,7 +50,7 @@ fetch() {
 
 pull() {
    REPO="$HOME/$1"
-   log_info "pull: $REPO"
+   log_info "pull: ${REPO##*/}"
    cd "$REPO" || { log_err "pull: repo not found: $REPO"; return 1; }
 
    STASHED=0
@@ -63,7 +63,7 @@ pull() {
       [ $STASHED -eq 1 ] && git stash pop -q >>"$GITHOP_DEBUG_LOG" 2>&1
       return 1
    }
-   log_info "pull: $STATE in $REPO"
+   log_info "pull: ${REPO##*/} is $STATE"
 
    case $STATE in
       even)
@@ -105,12 +105,12 @@ pull() {
    [ $STASHED -eq 1 ] && [ "$RESULT" = "up-to-date" ] && RESULT="stashed"
    [ $STASHED -eq 1 ] && [ "$RESULT" != "stashed"   ] && RESULT="stashed+$RESULT"
 
-   log_info "pull: done $REPO ($RESULT)"
+   log_info "pull: done ${REPO##*/} ($RESULT)"
 }
 
 push() {
    REPO="$HOME/$1"
-   log_info "push: $REPO"
+   log_info "push: ${REPO##*/}"
    cd "$REPO" || { log_err "push: repo not found: $REPO"; return 1; }
 
    git add . >>"$GITHOP_DEBUG_LOG" 2>&1
@@ -120,7 +120,7 @@ push() {
    fi
 
    STATE=`fetch` || { log_ntfy_err "no network — changes committed locally in $REPO"; return 1; }
-   log_info "push: $STATE in $REPO"
+   log_info "push: ${REPO##*/} is $STATE"
 
    case $STATE in
       even)
@@ -144,7 +144,7 @@ push() {
          ;;
    esac
 
-   log_info "push: done $REPO ($RESULT)"
+   log_info "push: done ${REPO##*/} ($RESULT)"
 }
 
 status() {
@@ -213,6 +213,7 @@ case $1 in
       else
          ntfysend "↑ push · $HOSTNAME" "arrow_up,warning" "4" "$MSG"
       fi
+      exit 0
       ;;
    pull)
       NUPTODATE=0; NFAILED=0; CHANGED=""
@@ -234,6 +235,7 @@ case $1 in
          ntfysend "↓ pull · $HOSTNAME" "arrow_down,warning" "4" "$MSG"
          log_desktop "$MSG — check journal"
       fi
+      exit 0
       ;;
    status)
       while read DIR URL; do
@@ -252,7 +254,7 @@ case $1 in
       systemctl --user status git-hop
       ;;
    log)
-      journalctl --user -t git-hop "${@:2}"
+      journalctl --user USER_UNIT=git-hop.service + SYSLOG_IDENTIFIER=git-hop "${@:2}"
       ;;
    *)
       echo "Usage: git-hop <command>"
