@@ -50,7 +50,7 @@ fetch() {
 
 pull() {
    REPO="$HOME/$1"
-   log_info "pull: ${REPO##*/}"
+   log_info "pull: ${REPO##*/} in $1"
    cd "$REPO" || { log_err "pull: repo not found: $REPO"; return 1; }
 
    STASHED=0
@@ -110,7 +110,7 @@ pull() {
 
 push() {
    REPO="$HOME/$1"
-   log_info "push: ${REPO##*/}"
+   log_info "push: ${REPO##*/} in $1"
    cd "$REPO" || { log_err "push: repo not found: $REPO"; return 1; }
 
    git add . >>"$GITHOP_DEBUG_LOG" 2>&1
