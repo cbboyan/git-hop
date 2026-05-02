@@ -254,7 +254,7 @@ case $1 in
       systemctl --user status git-hop
       ;;
    log)
-      journalctl --user USER_UNIT=git-hop.service + SYSLOG_IDENTIFIER=git-hop "${@:2}"
+      journalctl --user -b USER_UNIT=git-hop.service + SYSLOG_IDENTIFIER=git-hop "${@:2}"
       ;;
    *)
       echo "Usage: git-hop <command>"
