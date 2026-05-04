@@ -251,7 +251,11 @@ case $1 in
       done
       ;;
    service)
-      systemctl --user status git-hop
+      case $2 in
+         start|stop|enable|disable) systemctl --user "$2" git-hop ;;
+         status|"") systemctl --user status git-hop ;;
+         *) echo "Usage: git-hop service [start|stop|enable|disable|status]" >&2; exit 1 ;;
+      esac
       ;;
    log)
       journalctl --user -b USER_UNIT=git-hop.service + SYSLOG_IDENTIFIER=git-hop "${@:2}"
@@ -265,7 +269,7 @@ case $1 in
       echo "  status    show one-line status for each repo"
       echo "  list      list configured repos"
       echo "  add DIR   add a repo to the config"
-      echo "  service   show systemd service status"
+      echo "  service   manage systemd service [start|stop|enable|disable|status]"
       echo "  log       show journal log (extra args passed to journalctl)"
       ;;
 esac

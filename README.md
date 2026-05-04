@@ -69,7 +69,7 @@ git-hop status            # one-line status per repo
 git-hop list              # list configured repos
 git-hop add <dir>         # add a repo to the config
 git-hop log               # show journal log (accepts journalctl args)
-git-hop service           # show systemd service status
+git-hop service [start|stop|enable|disable|status]  # manage systemd service
 ```
 
 ## License
