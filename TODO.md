@@ -15,6 +15,25 @@
 - license: CC0 1.0 Universal (public domain).
 - ntfy messages: include hostname, pull vs. push action, per-repo details with result summary.
 
+## testing — before public release
+
+**Setup tip:** `systemctl --user stop git-hop` prevents the service from auto-running so you can trigger `git-hop pull` / `git-hop push` manually and control timing precisely. To simulate a dirty workdir at boot, stop the service on machine A, make local edits without committing, then reboot (or run `git-hop pull` manually).
+
+**Pull scenarios (simulate boot on machine A):**
+- [ ] behind remote: machine B pushes while A is off → boot A → expect fast-forward
+- [ ] ahead of remote: A commits offline (no network at last shutdown) → boot A with network → expect push
+- [ ] diverged, non-conflicting: A has offline commit, B pushed different file → boot A → expect merge + push
+- [ ] diverged, conflicting: A has offline commit, B pushed conflicting change → boot A → expect merge conflict error + ntfy
+- [ ] dirty workdir + remote ahead: stop service on A, edit a file, boot A while B has pushed → expect stash, merge, pop stash
+- [ ] dirty workdir + stash pop conflict: stop service on A, edit file X; B pushes conflicting change to file X; boot A → expect stash pop conflict error + ntfy
+
+**Push scenarios (simulate shutdown on machine A):**
+- [ ] clean workdir, even with remote → expect no-op
+- [ ] local changes, remote even → expect commit + push
+- [ ] local changes, remote ahead, non-conflicting: stop service on A, edit file; B pushes different file; run `git-hop push` → expect commit + merge + push ✓
+- [ ] local changes, remote ahead, conflicting: same but B edits same lines → expect merge conflict error + ntfy ✓
+- [ ] no network: disconnect before `git-hop push` → expect local commit only + ntfy
+
 ## should — before public release
 
 8. auto-clone: on pull, if a repo listed in config is missing locally, clone it from the stored URL.

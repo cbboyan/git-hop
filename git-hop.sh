@@ -83,7 +83,7 @@ pull() {
          git merge --no-edit -q FETCH_HEAD >>"$GITHOP_DEBUG_LOG" 2>&1 \
             || {
                log_err "pull: merge conflict in $REPO — manual fix required"
-               log_ntfy_err "merge conflict in **$REPO** — manual fix required"
+               log_ntfy_err "merge conflict in **${REPO##*/}**"$'\n'"manual fix required!"
                log_desktop "Merge conflict in $REPO — manual fix required"
                return 1
             }
@@ -96,7 +96,7 @@ pull() {
    if [ $STASHED -eq 1 ]; then
       git stash pop -q >>"$GITHOP_DEBUG_LOG" 2>&1 || {
          log_err "pull: stash pop conflict in $REPO — manual fix required"
-         log_ntfy_err "stash pop conflict in **$REPO** — manual fix required"
+         log_ntfy_err "stash pop conflict in **${REPO##*/}**"$'\n'"manual fix required!"
          log_desktop "Stash pop conflict in $REPO — manual fix required"
          return 1
       }
@@ -135,7 +135,7 @@ push() {
          git merge --no-edit -q FETCH_HEAD >>"$GITHOP_DEBUG_LOG" 2>&1 \
             || {
                log_err "push: merge conflict in $REPO — manual fix required"
-               log_ntfy_err "merge conflict in **$REPO** — manual fix required"
+               log_ntfy_err "merge conflict in **${REPO##*/}**"$'\n'"manual fix required!"
                return 1
             }
          git push -q >>"$GITHOP_DEBUG_LOG" 2>&1 \
