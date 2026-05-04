@@ -12,13 +12,13 @@ GITHOP_DEBUG_LOG=/dev/null
 
 source "$CONFDIR/config" 2>/dev/null
 
-dlog() { echo "$1" >> "$GITHOP_DEBUG_LOG" 2>/dev/null; }
+log_debug() { echo "$1" >> "$GITHOP_DEBUG_LOG" 2>/dev/null; }
 
 # log_info/log_err echo to stderr only when running interactively (not as a service)
-log_info()    { logger -t git-hop "$1";             [ -t 2 ] && echo "$1" >&2;        dlog "$1"; }
-log_err()     { logger -p user.err -t git-hop "$1"; [ -t 2 ] && echo "ERROR: $1" >&2; dlog "ERROR: $1"; }
-ntfysend() {
-   # ntfysend TITLE TAGS PRIORITY BODY
+log_info()    { logger -t git-hop "$1";             [ -t 2 ] && echo "$1" >&2;        log_debug "$1"; }
+log_err()     { logger -p user.err -t git-hop "$1"; [ -t 2 ] && echo "ERROR: $1" >&2; log_debug "ERROR: $1"; }
+ntfy_send() {
+   # ntfy_send TITLE TAGS PRIORITY BODY
    [ -z "$GITHOP_NTFY_CHANNEL" ] && return
    curl -s \
       -H "Title: $1" \
@@ -28,7 +28,7 @@ ntfysend() {
       -d "$4" \
       ntfy.sh/$GITHOP_NTFY_CHANNEL >/dev/null 2>&1
 }
-log_ntfy_err() { ntfysend "⚠ git-hop error · $HOSTNAME" "rotating_light" "5" "$1"; }
+ntfy_err() { ntfy_send "⚠ git-hop error · $HOSTNAME" "rotating_light" "5" "$1"; }
 log_desktop() { notify-send "git-hop" "$1" 2>/dev/null || true; }
 
 repos() {
@@ -83,7 +83,7 @@ pull() {
          git merge --no-edit -q FETCH_HEAD >>"$GITHOP_DEBUG_LOG" 2>&1 \
             || {
                log_err "pull: merge conflict in $REPO — manual fix required"
-               log_ntfy_err "merge conflict in **${REPO##*/}**"$'\n'"manual fix required!"
+               ntfy_err "merge conflict in **${REPO##*/}**"$'\n'"manual fix required!"
                log_desktop "Merge conflict in $REPO — manual fix required"
                return 1
             }
@@ -96,7 +96,7 @@ pull() {
    if [ $STASHED -eq 1 ]; then
       git stash pop -q >>"$GITHOP_DEBUG_LOG" 2>&1 || {
          log_err "pull: stash pop conflict in $REPO — manual fix required"
-         log_ntfy_err "stash pop conflict in **${REPO##*/}**"$'\n'"manual fix required!"
+         ntfy_err "stash pop conflict in **${REPO##*/}**"$'\n'"manual fix required!"
          log_desktop "Stash pop conflict in $REPO — manual fix required"
          return 1
       }
@@ -119,7 +119,7 @@ push() {
          || { log_err "push: commit failed in $REPO"; return 1; }
    fi
 
-   STATE=`fetch` || { log_ntfy_err "no network — changes committed locally in $REPO"; return 1; }
+   STATE=`fetch` || { ntfy_err "no network — changes committed locally in $REPO"; return 1; }
    log_info "push: ${REPO##*/} is $STATE"
 
    case $STATE in
@@ -135,7 +135,7 @@ push() {
          git merge --no-edit -q FETCH_HEAD >>"$GITHOP_DEBUG_LOG" 2>&1 \
             || {
                log_err "push: merge conflict in $REPO — manual fix required"
-               log_ntfy_err "merge conflict in **${REPO##*/}**"$'\n'"manual fix required!"
+               ntfy_err "merge conflict in **${REPO##*/}**"$'\n'"manual fix required!"
                return 1
             }
          git push -q >>"$GITHOP_DEBUG_LOG" 2>&1 \
@@ -197,9 +197,9 @@ summarize() {
    echo "$MSG"
 }
 
-dlog ""
-dlog "@@@ $HOSTNAME @@@ `date` @@@ $@"
-dlog ""
+log_debug ""
+log_debug "@@@ $HOSTNAME @@@ `date` @@@ $@"
+log_debug ""
 
 case $1 in
    push)
@@ -216,9 +216,9 @@ case $1 in
       done < <(repos)
       MSG=`summarize "$CHANGED" $NUPTODATE $NFAILED`
       if [ $NFAILED -eq 0 ]; then
-         ntfysend "↑ push · $HOSTNAME" "arrow_up,white_check_mark" "3" "$MSG"
+         ntfy_send "↑ push · $HOSTNAME" "arrow_up,white_check_mark" "3" "$MSG"
       else
-         ntfysend "↑ push · $HOSTNAME" "arrow_up,warning" "4" "$MSG"
+         ntfy_send "↑ push · $HOSTNAME" "arrow_up,warning" "4" "$MSG"
       fi
       exit 0
       ;;
@@ -236,10 +236,10 @@ case $1 in
       done < <(repos)
       MSG=`summarize "$CHANGED" $NUPTODATE $NFAILED`
       if [ $NFAILED -eq 0 ]; then
-         ntfysend "↓ pull · $HOSTNAME" "arrow_down,white_check_mark" "3" "$MSG"
+         ntfy_send "↓ pull · $HOSTNAME" "arrow_down,white_check_mark" "3" "$MSG"
          log_desktop "$MSG"
       else
-         ntfysend "↓ pull · $HOSTNAME" "arrow_down,warning" "4" "$MSG"
+         ntfy_send "↓ pull · $HOSTNAME" "arrow_down,warning" "4" "$MSG"
          log_desktop "$MSG — check journal"
       fi
       exit 0
