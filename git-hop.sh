@@ -87,14 +87,14 @@ pull() {
          RESULT="pushed"
          ;;
       diverged)
-         git_merge || { log_error "pull: merge conflict in **${REPO##*/}**"$'\n'"Manual fix required!"; return 1; }
+         git_merge || { log_error "pull: merge conflict in **${REPO##*/}**"$'\n'"Manual FIX REQUIRED"; return 1; }
          git_push  || { log_err "pull: push failed in $REPO"; return 1; }
          RESULT="merged"
          ;;
    esac
 
    if [ $STASHED -eq 1 ]; then
-      git_unstash || { log_error "pull: stash pop conflict in **${REPO##*/}**"$'\n'"Manual fix required!"; return 1; }
+      git_unstash || { log_error "pull: stash pop conflict in **${REPO##*/}**"$'\n'"Manual FIX REQUIRED"; return 1; }
    fi
 
    [ $STASHED -eq 1 ] && [ "$RESULT" = "up-to-date" ] && RESULT="stashed"
@@ -125,7 +125,7 @@ push() {
          RESULT="pushed"
          ;;
       behind|diverged)
-         git_merge || { log_error "push: merge conflict in **${REPO##*/}**"$'\n'"Manual fix required!"; return 1; }
+         git_merge || { log_error "push: merge conflict in **${REPO##*/}**"$'\n'"Manual FIX REQUIRED"; return 1; }
          git_push  || { log_err "push: push after merge failed in $REPO"; return 1; }
          RESULT="merged"
          ;;

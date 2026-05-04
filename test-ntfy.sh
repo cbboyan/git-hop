@@ -45,12 +45,12 @@ send "pull failed" \
 
 send "error: merge conflict on pull" \
    "⚠ git-hop error · work" "rotating_light" "5" \
-   "pull: merge conflict in **playground**"$'\n'"Manual fix required!"
+   "pull: merge conflict in **playground**"$'\n'"Manual FIX REQUIRED"
 
 send "error: stash pop conflict" \
    "⚠ git-hop error · home" "rotating_light" "5" \
-   "pull: stash pop conflict in **notes**"$'\n'"Manual fix required!"
+   "pull: stash pop conflict in **notes**"$'\n'"Manual FIX REQUIRED"
 
 send "error: merge conflict on push" \
    "⚠ git-hop error · work" "rotating_light" "5" \
-   "push: merge conflict in **work**"$'\n'"Manual fix required!"
+   "push: merge conflict in **work**"$'\n'"Manual FIX REQUIRED"
