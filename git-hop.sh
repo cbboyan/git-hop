@@ -30,7 +30,7 @@ ntfy_send() {
 }
 ntfy_err()    { ntfy_send "⚠ git-hop error · $HOSTNAME" "rotating_light" "5" "$1"; }
 log_desktop() { notify-send "git-hop" "$1" 2>/dev/null || true; }
-log_error()   { log_err "$1"; ntfy_err "$1"; log_desktop "$1"; }
+log_error()   { PLAIN="${1//\*\*/}"; PLAIN="${PLAIN//$'\n'/ - }"; log_err "$PLAIN"; ntfy_err "$1"; log_desktop "$PLAIN"; }
 
 git_stash()   { git stash -u -q >>"$GITHOP_DEBUG_LOG" 2>&1; }
 git_unstash() { git stash pop -q >>"$GITHOP_DEBUG_LOG" 2>&1; }
@@ -38,7 +38,7 @@ git_ff()      { git merge --ff-only -q FETCH_HEAD >>"$GITHOP_DEBUG_LOG" 2>&1; }
 git_merge()   { git merge --no-edit -q FETCH_HEAD >>"$GITHOP_DEBUG_LOG" 2>&1; }
 git_push()    { git push -q >>"$GITHOP_DEBUG_LOG" 2>&1; }
 git_add()     { git add . >>"$GITHOP_DEBUG_LOG" 2>&1; }
-git_commit()  { git commit -q -a -m "git-hop $HOSTNAME" >>"$GITHOP_DEBUG_LOG" 2>&1; }
+git_commit()  { git commit -q -a -m "git-hop $USER@$HOSTNAME" >>"$GITHOP_DEBUG_LOG" 2>&1; }
 
 repos() {
    grep -Ev '^\s*(#|$)' "$CONF" 2>/dev/null
@@ -87,14 +87,14 @@ pull() {
          RESULT="pushed"
          ;;
       diverged)
-         git_merge || { log_error "pull: merge conflict in $REPO — manual fix required"; return 1; }
+         git_merge || { log_error "pull: merge conflict in **${REPO##*/}**"$'\n'"Manual fix required!"; return 1; }
          git_push  || { log_err "pull: push failed in $REPO"; return 1; }
          RESULT="merged"
          ;;
    esac
 
    if [ $STASHED -eq 1 ]; then
-      git_unstash || { log_error "pull: stash pop conflict in $REPO — manual fix required"; return 1; }
+      git_unstash || { log_error "pull: stash pop conflict in **${REPO##*/}**"$'\n'"Manual fix required!"; return 1; }
    fi
 
    [ $STASHED -eq 1 ] && [ "$RESULT" = "up-to-date" ] && RESULT="stashed"
@@ -125,7 +125,7 @@ push() {
          RESULT="pushed"
          ;;
       behind|diverged)
-         git_merge || { log_error "push: merge conflict in $REPO — manual fix required"; return 1; }
+         git_merge || { log_error "push: merge conflict in **${REPO##*/}**"$'\n'"Manual fix required!"; return 1; }
          git_push  || { log_err "push: push after merge failed in $REPO"; return 1; }
          RESULT="merged"
          ;;
