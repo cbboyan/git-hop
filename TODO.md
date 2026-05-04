@@ -40,6 +40,10 @@
 
 ## nice to have
 
+14. network timeout: on weak wifi, `git fetch` can hang for minutes per repo. Fix with (a) a pre-flight inet check (`nc -zw2 8.8.8.8 53`) to bail early when there's no network, and (b) `timeout N` on `git_fetch` as a safety net. Make check host configurable via `INET_CHECK_HOST` in config. Not blocking — user service runs in background and doesn't delay login.
+
+
+
 11. periodic push: push while running (idle detection or fixed interval, e.g. every hour).
 12. suspend/resume support: push before suspend, pull on resume. `sleep.target` is system-level so the cleanest hook needs root (system service drop-in); rootless alternative is listening on logind D-Bus `PrepareForSleep` signal via a second user service unit (`git-hop-sleep.service`).
 13. graphical login/logout support: pull on graphical login via `graphical-session.target`, push on logout via `graphical-session-pre.target`. User-level, no root needed. Useful for setups that don't reboot but log out graphically. Would overlap with boot/shutdown service — needs a config flag or separate install target.
