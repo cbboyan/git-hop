@@ -13,6 +13,7 @@
 - `list`, `status` (one-line per repo), `service`, `log` subcommands added.  `status` shows `up-to-date` when clean.
 - Makefile: install/uninstall/enable/stop/disable/status.  `install` copies `git-hop.sh` → `~/.local/bin/git-hop`.  `enable` runs `loginctl enable-linger`.
 - license: CC0 1.0 Universal (public domain).
+- ntfy messages: include hostname, pull vs. push action, per-repo details with result summary.
 
 ## should — before public release
 
@@ -20,5 +21,6 @@
 
 ## nice to have
 
-10. ntfy messages: improve format — include hostname, startup vs. shutdown action, per-repo details.
 11. periodic push: push while running (idle detection or fixed interval, e.g. every hour).
+12. suspend/resume support: push before suspend, pull on resume. `sleep.target` is system-level so the cleanest hook needs root (system service drop-in); rootless alternative is listening on logind D-Bus `PrepareForSleep` signal via a second user service unit (`git-hop-sleep.service`).
+13. graphical login/logout support: pull on graphical login via `graphical-session.target`, push on logout via `graphical-session-pre.target`. User-level, no root needed. Useful for setups that don't reboot but log out graphically. Would overlap with boot/shutdown service — needs a config flag or separate install target.

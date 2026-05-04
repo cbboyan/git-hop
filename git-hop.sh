@@ -164,6 +164,13 @@ status() {
    fi
 }
 
+clone() {
+   URL="$1"
+   REPONAME=`basename "$URL" .git`
+   git clone "$URL" || { log_err "clone: failed: $URL"; return 1; }
+   add "$REPONAME"
+}
+
 add() {
    REPO=`realpath "$1" 2>/dev/null` || { log_err "add: directory not found: $1"; return 1; }
    git -C "$REPO" rev-parse --git-dir >/dev/null 2>&1 \
@@ -242,6 +249,9 @@ case $1 in
          status "$DIR"
       done < <(repos)
       ;;
+   clone)
+      clone "$2"
+      ;;
    add)
       add "$2"
       ;;
@@ -268,6 +278,7 @@ case $1 in
       echo "  push      commit and push all repos (run at logout)"
       echo "  status    show one-line status for each repo"
       echo "  list      list configured repos"
+      echo "  clone URL clone a repo into current dir and add it to the config"
       echo "  add DIR   add a repo to the config"
       echo "  service   manage systemd service [start|stop|enable|disable|status]"
       echo "  log       show journal log (extra args passed to journalctl)"

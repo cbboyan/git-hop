@@ -67,6 +67,7 @@ git-hop pull              # pull all repos (run at login by the service)
 git-hop push              # commit and push all repos (run at logout by the service)
 git-hop status            # one-line status per repo
 git-hop list              # list configured repos
+git-hop clone <url>       # clone a repo into current dir and add it to the config
 git-hop add <dir>         # add a repo to the config
 git-hop log               # show journal log (accepts journalctl args)
 git-hop service [start|stop|enable|disable|status]  # manage systemd service
