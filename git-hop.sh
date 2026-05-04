@@ -12,7 +12,7 @@ GITHOP_DEBUG_LOG=/dev/null
 
 source "$CONFDIR/config" 2>/dev/null
 
-log_debug() { echo "$1" >> "$GITHOP_DEBUG_LOG" 2>/dev/null; }
+log_debug()   { echo "$1" >> "$GITHOP_DEBUG_LOG" 2>/dev/null; }
 
 # log_info/log_err echo to stderr only when running interactively (not as a service)
 log_info()    { logger -t git-hop "$1";             [ -t 2 ] && echo "$1" >&2;        log_debug "$1"; }
@@ -28,14 +28,23 @@ ntfy_send() {
       -d "$4" \
       ntfy.sh/$GITHOP_NTFY_CHANNEL >/dev/null 2>&1
 }
-ntfy_err() { ntfy_send "⚠ git-hop error · $HOSTNAME" "rotating_light" "5" "$1"; }
+ntfy_err()    { ntfy_send "⚠ git-hop error · $HOSTNAME" "rotating_light" "5" "$1"; }
 log_desktop() { notify-send "git-hop" "$1" 2>/dev/null || true; }
+log_error()   { log_err "$1"; ntfy_err "$1"; log_desktop "$1"; }
+
+git_stash()   { git stash -u -q >>"$GITHOP_DEBUG_LOG" 2>&1; }
+git_unstash() { git stash pop -q >>"$GITHOP_DEBUG_LOG" 2>&1; }
+git_ff()      { git merge --ff-only -q FETCH_HEAD >>"$GITHOP_DEBUG_LOG" 2>&1; }
+git_merge()   { git merge --no-edit -q FETCH_HEAD >>"$GITHOP_DEBUG_LOG" 2>&1; }
+git_push()    { git push -q >>"$GITHOP_DEBUG_LOG" 2>&1; }
+git_add()     { git add . >>"$GITHOP_DEBUG_LOG" 2>&1; }
+git_commit()  { git commit -q -a -m "git-hop $HOSTNAME" >>"$GITHOP_DEBUG_LOG" 2>&1; }
 
 repos() {
    grep -Ev '^\s*(#|$)' "$CONF" 2>/dev/null
 }
 
-fetch() {
+git_fetch() {
    git rev-parse @{u} >>"$GITHOP_DEBUG_LOG" 2>&1 || { log_err "no upstream configured in `pwd`"; return 1; }
    git fetch -q >>"$GITHOP_DEBUG_LOG" 2>&1        || { log_err "fetch failed (no network?) in `pwd`"; return 1; }
    LOCAL=`git rev-parse HEAD`
@@ -55,12 +64,12 @@ pull() {
 
    STASHED=0
    if [ -n "`git status --porcelain`" ]; then
-      git stash -u -q >>"$GITHOP_DEBUG_LOG" 2>&1 || { log_err "pull: stash failed in $REPO"; return 1; }
+      git_stash || { log_err "pull: stash failed in $REPO"; return 1; }
       STASHED=1
    fi
 
-   STATE=`fetch` || {
-      [ $STASHED -eq 1 ] && git stash pop -q >>"$GITHOP_DEBUG_LOG" 2>&1
+   STATE=`git_fetch` || {
+      [ $STASHED -eq 1 ] && git_unstash
       return 1
    }
    log_info "pull: ${REPO##*/} is $STATE"
@@ -70,36 +79,22 @@ pull() {
          RESULT="up-to-date"
          ;;
       behind)
-         git merge --ff-only -q FETCH_HEAD >>"$GITHOP_DEBUG_LOG" 2>&1 \
-            || { log_err "pull: fast-forward failed in $REPO"; return 1; }
+         git_ff    || { log_err "pull: fast-forward failed in $REPO"; return 1; }
          RESULT="pulled"
          ;;
       ahead)
-         git push -q >>"$GITHOP_DEBUG_LOG" 2>&1 \
-            || { log_err "pull: push failed in $REPO"; return 1; }
+         git_push  || { log_err "pull: push failed in $REPO"; return 1; }
          RESULT="pushed"
          ;;
       diverged)
-         git merge --no-edit -q FETCH_HEAD >>"$GITHOP_DEBUG_LOG" 2>&1 \
-            || {
-               log_err "pull: merge conflict in $REPO — manual fix required"
-               ntfy_err "merge conflict in **${REPO##*/}**"$'\n'"manual fix required!"
-               log_desktop "Merge conflict in $REPO — manual fix required"
-               return 1
-            }
-         git push -q >>"$GITHOP_DEBUG_LOG" 2>&1 \
-            || { log_err "pull: push after merge failed in $REPO"; return 1; }
+         git_merge || { log_error "pull: merge conflict in $REPO — manual fix required"; return 1; }
+         git_push  || { log_err "pull: push failed in $REPO"; return 1; }
          RESULT="merged"
          ;;
    esac
 
    if [ $STASHED -eq 1 ]; then
-      git stash pop -q >>"$GITHOP_DEBUG_LOG" 2>&1 || {
-         log_err "pull: stash pop conflict in $REPO — manual fix required"
-         ntfy_err "stash pop conflict in **${REPO##*/}**"$'\n'"manual fix required!"
-         log_desktop "Stash pop conflict in $REPO — manual fix required"
-         return 1
-      }
+      git_unstash || { log_error "pull: stash pop conflict in $REPO — manual fix required"; return 1; }
    fi
 
    [ $STASHED -eq 1 ] && [ "$RESULT" = "up-to-date" ] && RESULT="stashed"
@@ -113,13 +108,12 @@ push() {
    log_info "push: ${REPO##*/} in $1"
    cd "$REPO" || { log_err "push: repo not found: $REPO"; return 1; }
 
-   git add . >>"$GITHOP_DEBUG_LOG" 2>&1
+   git_add
    if [ -n "`git status --porcelain`" ]; then
-      git commit -q -a -m "git-hop $HOSTNAME" >>"$GITHOP_DEBUG_LOG" 2>&1 \
-         || { log_err "push: commit failed in $REPO"; return 1; }
+      git_commit || { log_err "push: commit failed in $REPO"; return 1; }
    fi
 
-   STATE=`fetch` || { ntfy_err "no network — changes committed locally in $REPO"; return 1; }
+   STATE=`git_fetch` || { log_err "no network — changes committed locally in $REPO"; return 1; }
    log_info "push: ${REPO##*/} is $STATE"
 
    case $STATE in
@@ -127,19 +121,12 @@ push() {
          RESULT="up-to-date"
          ;;
       ahead)
-         git push -q >>"$GITHOP_DEBUG_LOG" 2>&1 \
-            || { log_err "push: push failed in $REPO"; return 1; }
+         git_push  || { log_err "push: push failed in $REPO"; return 1; }
          RESULT="pushed"
          ;;
       behind|diverged)
-         git merge --no-edit -q FETCH_HEAD >>"$GITHOP_DEBUG_LOG" 2>&1 \
-            || {
-               log_err "push: merge conflict in $REPO — manual fix required"
-               ntfy_err "merge conflict in **${REPO##*/}**"$'\n'"manual fix required!"
-               return 1
-            }
-         git push -q >>"$GITHOP_DEBUG_LOG" 2>&1 \
-            || { log_err "push: push after merge failed in $REPO"; return 1; }
+         git_merge || { log_error "push: merge conflict in $REPO — manual fix required"; return 1; }
+         git_push  || { log_err "push: push after merge failed in $REPO"; return 1; }
          RESULT="merged"
          ;;
    esac
