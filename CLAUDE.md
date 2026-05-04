@@ -33,7 +33,9 @@ Public GitHub repo. Previously named `gitsync`, renamed to `git-hop`.
 - Login flow: stash dirty workdir → fetch → state → act → pop stash. Fetch failure = no network, skip gracefully.
 - Logout flow: commit first → fetch → state → merge if needed → push. Commit-before-fetch ensures local work is never lost.
 - Three error channels: `logger -p user.err` (journal), ntfy (remote), `notify-send` (desktop).
-- Function naming: group related functions with a common prefix (`log_`, `ntfy_`, `desktop_`); one word after the `_` (e.g. `log_info`, `ntfy_send`); hierarchy allowed (`log_debug`, `ntfy_err`). Top-level subcommand functions (`pull`, `push`, `status`, etc.) need no prefix.
+- Function naming: group related functions with a common prefix (`log_`, `ntfy_`, `git_`); one word after the `_` (e.g. `log_info`, `ntfy_send`, `git_push`); hierarchy allowed (`log_debug`, `ntfy_err`). Top-level subcommand functions (`pull`, `push`, `status`, etc.) need no prefix.
+- `log_err` — journal only; `log_error` — full broadcast (journal + ntfy + desktop), used for critical errors requiring manual intervention.
+- `git_` functions wrap git operations with debug log redirect; call these from `pull`/`push` instead of raw git, except trivial one-liners in conditionals (e.g. `git status --porcelain`).
 - `log_info`/`log_err` echo to stderr only when interactive (`[ -t 2 ]`) to avoid duplicate journal entries from the service.
 - System-wide service dropped — user services are standard; system service required root and hardcoded the username.
 - License: CC0 1.0 Universal (public domain, no attribution required).
