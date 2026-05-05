@@ -39,6 +39,7 @@ git_merge()   { git merge --no-edit -q FETCH_HEAD >>"$GITHOP_DEBUG_LOG" 2>&1; }
 git_push()    { git push -q >>"$GITHOP_DEBUG_LOG" 2>&1; }
 git_add()     { git add . >>"$GITHOP_DEBUG_LOG" 2>&1; }
 git_commit()  { git commit -q -a -m "git-hop $USER@$HOSTNAME" >>"$GITHOP_DEBUG_LOG" 2>&1; }
+git_clone()   { git clone -q "$1" "$2" >>"$GITHOP_DEBUG_LOG" 2>&1; }
 
 repos() {
    grep -Ev '^\s*(#|$)' "$CONF" 2>/dev/null
@@ -59,7 +60,16 @@ git_fetch() {
 
 pull() {
    REPO="$HOME/$1"
+   URL="$2"
    log_info "pull: ${REPO##*/} in $1"
+   if [ ! -d "$REPO" ]; then
+      [ -z "$URL" ] && { log_err "pull: repo not found: $REPO"; return 1; }
+      mkdir -p "`dirname "$REPO"`"
+      git_clone "$URL" "$REPO" || { log_err "pull: clone failed: $URL"; return 1; }
+      RESULT="cloned"
+      log_info "pull: done ${REPO##*/} ($RESULT)"
+      return 0
+   fi
    cd "$REPO" || { log_err "pull: repo not found: $REPO"; return 1; }
 
    STASHED=0
@@ -213,7 +223,7 @@ case $1 in
       NUPTODATE=0; NFAILED=0; CHANGED=""
       while read DIR URL; do
          RESULT=""
-         if pull "$DIR"; then
+         if pull "$DIR" "$URL"; then
             [ "$RESULT" = "up-to-date" ] \
                && NUPTODATE=$((NUPTODATE+1)) \
                || CHANGED="${CHANGED:+$CHANGED, }**${DIR##*/}** $RESULT"

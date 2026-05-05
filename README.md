@@ -8,7 +8,7 @@ Automatically sync your git repositories when you sit down at a machine — and 
 
 You work on one machine at a time. When you arrive, your repos are already up to date. When you leave, your work is safely stored in the remote. No manual commits, no forgetting to push.
 
-At login, `git-hop` fetches the remote state and brings the local repo up to date (fast-forward, merge, or push pending commits as needed). At logout, it commits any local changes and pushes. If there is no network, local work is always committed first — it will be pushed next time.
+At login, `git-hop` fetches the remote state and brings the local repo up to date (fast-forward, merge, or push pending commits as needed). If a repo in the config is missing locally — for example, on a freshly set up machine — it is cloned automatically. At logout, it commits any local changes and pushes. If there is no network, local work is always committed first — it will be pushed next time.
 
 This model works best with **exclusive use**: only one of your devices active at a time. Occasional overlap is handled gracefully — `git-hop` will merge where possible and report conflicts clearly.
 
@@ -30,6 +30,8 @@ repos/myproject    git@github.com:you/myproject.git
 repos/notes        git@github.com:you/notes.git
 documents/journal  git@github.com:you/journal.git
 ```
+
+Repos listed here that don't exist locally are cloned automatically on the next `git-hop pull` — useful when setting up a new machine.
 
 Or use `git-hop add` to register repos from the command line:
 

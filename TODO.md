@@ -36,8 +36,6 @@
 
 ## should — before public release
 
-8. auto-clone: on pull, if a repo listed in config is missing locally, clone it from the stored URL.
-
 ## nice to have
 
 14. network timeout: on weak wifi, `git fetch` can hang for minutes per repo. Fix with (a) a pre-flight inet check (`nc -zw2 8.8.8.8 53`) to bail early when there's no network, and (b) `timeout N` on `git_fetch` as a safety net. Make check host configurable via `INET_CHECK_HOST` in config. Not blocking — user service runs in background and doesn't delay login.
