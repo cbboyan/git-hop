@@ -6,13 +6,17 @@ _(nothing blocking — ready for public release)_
 
 ## 💡 Nice to have
 
+- **service split:** replace the current `git-hop.service` with three focused services, each independently installable:
+  - `git-hop-boot.service` — pull at boot / push at shutdown (`default.target`); for servers and desktops that reboot rather than log out; no desktop notifications (ntfy only)
+  - `git-hop-desktop.service` — pull at graphical login / push at graphical logout (`graphical-session.target`); full desktop notifications; current `git-hop.service` behaviour
+  - `git-hop-suspend.service` — push before suspend / pull on resume; Python D-Bus watcher with `delay` inhibitor lock (see below); works alongside either of the above
+  - Makefile gets `install-boot`, `install-desktop`, `install-suspend` targets (plus `install-all`)
+
+- **suspend/resume support** (`git-hop-suspend.service`): `Type=simple` user service running a small Python script that listens for the logind D-Bus `PrepareForSleep` signal and takes a `delay` inhibitor lock before push — guaranteeing suspend waits for push to complete (up to `InhibitDelayMaxSec`, default 5s, configurable in `/etc/systemd/logind.conf`). Requires `python3-dbus` and `python3-gobject`. Shutdown already handled by `ExecStop` — inhibitor only needed for suspend.
+
 - **network timeout:** on weak wifi, `git fetch` can hang for minutes per repo. Fix with (a) a pre-flight inet check (`nc -zw2 8.8.8.8 53`) to bail early when there's no network, and (b) `timeout N` on `git_fetch` as a safety net. Make check host configurable via `INET_CHECK_HOST` in config. Not blocking — user service runs in background and doesn't delay login.
 
 - **periodic push:** push while running (idle detection or fixed interval, e.g. every hour).
-
-- **suspend/resume support:** push before suspend, pull on resume. A second `git-hop-sleep.service` (`Type=simple`, user-level) runs a small Python script that listens for the logind D-Bus `PrepareForSleep` signal and takes a `delay` inhibitor lock before push — guaranteeing suspend waits for push to complete (up to `InhibitDelayMaxSec`, default 5s, configurable in `/etc/systemd/logind.conf`). Requires `python3-dbus` and `python3-gobject`. Shutdown is already handled by `ExecStop` in the main service — inhibitor only needed for suspend.
-
-- **graphical logout push:** push on graphical logout via `graphical-session-pre.target` (pull on login is already wired to `graphical-session.target`). Useful for setups that log out graphically without rebooting. Would overlap with boot/shutdown service — needs a config flag or separate install target.
 
 ## 🧪 Testing — before public release
 
