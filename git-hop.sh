@@ -29,8 +29,19 @@ ntfy_send() {
       ntfy.sh/$GITHOP_NTFY_CHANNEL >/dev/null 2>&1
 }
 ntfy_err()    { ntfy_send "⚠ git-hop error · $HOSTNAME" "rotating_light" "5" "$1"; }
-log_desktop() { notify-send "git-hop" "$1" 2>/dev/null || true; }
-log_error()   { PLAIN="${1//\*\*/}"; PLAIN="${PLAIN//$'\n'/ - }"; log_err "$PLAIN"; ntfy_err "$1"; log_desktop "$PLAIN"; }
+log_desktop()  { notify-send "git-hop" "$1" 2>/dev/null || true; }
+log_error()    { PLAIN="${1//\*\*/}"; PLAIN="${PLAIN//$'\n'/ - }"; log_err "$PLAIN"; ntfy_err "$1"; log_desktop "$PLAIN"; }
+log_summary()  {
+   # log_summary TITLE TAGS CHANGED NUPTODATE NFAILED
+   MSG=`summarize "$3" $4 $5`
+   if [ "$5" -eq 0 ]; then
+      ntfy_send "$1 · $HOSTNAME" "$2,white_check_mark" "3" "$MSG"
+      log_desktop "$MSG"
+   else
+      ntfy_send "$1 · $HOSTNAME" "$2,warning" "4" "$MSG"
+      log_desktop "$MSG — check journal"
+   fi
+}
 
 git_stash()   { git stash -u -q >>"$GITHOP_DEBUG_LOG" 2>&1; }
 git_unstash() { git stash pop -q >>"$GITHOP_DEBUG_LOG" 2>&1; }
@@ -48,9 +59,9 @@ repos() {
 git_fetch() {
    git rev-parse @{u} >>"$GITHOP_DEBUG_LOG" 2>&1 || { log_err "no upstream configured in `pwd`"; return 1; }
    git fetch -q >>"$GITHOP_DEBUG_LOG" 2>&1        || { log_err "fetch failed (no network?) in `pwd`"; return 1; }
-   LOCAL=`git rev-parse HEAD`
-   REMOTE=`git rev-parse @{u}`
-   BASE=`git merge-base HEAD @{u}`
+   local LOCAL=`git rev-parse HEAD`
+   local REMOTE=`git rev-parse @{u}`
+   local BASE=`git merge-base HEAD @{u}`
    if   [ "$LOCAL" = "$REMOTE" ]; then echo "even"
    elif [ "$LOCAL" = "$BASE"   ]; then echo "behind"
    elif [ "$REMOTE" = "$BASE"  ]; then echo "ahead"
@@ -59,8 +70,8 @@ git_fetch() {
 }
 
 pull() {
-   REPO="$HOME/$1"
-   URL="$2"
+   local REPO="$HOME/$1"
+   local URL="$2"
    log_info "pull: ${REPO##*/} in $1"
    if [ ! -d "$REPO" ]; then
       [ -z "$URL" ] && { log_err "pull: repo not found: $REPO"; return 1; }
@@ -72,13 +83,13 @@ pull() {
    fi
    cd "$REPO" || { log_err "pull: repo not found: $REPO"; return 1; }
 
-   STASHED=0
+   local STASHED=0
    if [ -n "`git status --porcelain`" ]; then
       git_stash || { log_err "pull: stash failed in $REPO"; return 1; }
       STASHED=1
    fi
 
-   STATE=`git_fetch` || {
+   local STATE=`git_fetch` || {
       [ $STASHED -eq 1 ] && git_unstash
       return 1
    }
@@ -114,7 +125,7 @@ pull() {
 }
 
 push() {
-   REPO="$HOME/$1"
+   local REPO="$HOME/$1"
    log_info "push: ${REPO##*/} in $1"
    cd "$REPO" || { log_err "push: repo not found: $REPO"; return 1; }
 
@@ -123,7 +134,7 @@ push() {
       git_commit || { log_err "push: commit failed in $REPO"; return 1; }
    fi
 
-   STATE=`git_fetch` || { log_err "no network — changes committed locally in $REPO"; return 1; }
+   local STATE=`git_fetch` || { log_err "no network — changes committed locally in $REPO"; return 1; }
    log_info "push: ${REPO##*/} is $STATE"
 
    case $STATE in
@@ -185,6 +196,22 @@ add() {
    log_info "add: $RELDIR  $URL"
 }
 
+run_repos() {
+   # run_repos FN TITLE TAGS
+   local NUPTODATE=0 NFAILED=0 CHANGED=""
+   while read DIR URL; do
+      RESULT=""
+      if "$1" "$DIR" "$URL"; then
+         [ "$RESULT" = "up-to-date" ] \
+            && NUPTODATE=$((NUPTODATE+1)) \
+            || CHANGED="${CHANGED:+$CHANGED, }**${DIR##*/}** $RESULT"
+      else
+         NFAILED=$((NFAILED+1))
+      fi
+   done < <(repos)
+   log_summary "$2" "$3" "$CHANGED" $NUPTODATE $NFAILED
+}
+
 summarize() {
    # args: CHANGED NUPTODATE NFAILED
    MSG=""
@@ -195,52 +222,12 @@ summarize() {
 }
 
 log_debug ""
-log_debug "@@@ $HOSTNAME @@@ `date` @@@ $@"
+log_debug "--- git-hop $@ · $USER@$HOSTNAME · `date` ---"
 log_debug ""
 
 case $1 in
-   push)
-      NUPTODATE=0; NFAILED=0; CHANGED=""
-      while read DIR URL; do
-         RESULT=""
-         if push "$DIR"; then
-            [ "$RESULT" = "up-to-date" ] \
-               && NUPTODATE=$((NUPTODATE+1)) \
-               || CHANGED="${CHANGED:+$CHANGED, }**${DIR##*/}** $RESULT"
-         else
-            NFAILED=$((NFAILED+1))
-         fi
-      done < <(repos)
-      MSG=`summarize "$CHANGED" $NUPTODATE $NFAILED`
-      if [ $NFAILED -eq 0 ]; then
-         ntfy_send "↑ push · $HOSTNAME" "arrow_up,white_check_mark" "3" "$MSG"
-      else
-         ntfy_send "↑ push · $HOSTNAME" "arrow_up,warning" "4" "$MSG"
-      fi
-      exit 0
-      ;;
-   pull)
-      NUPTODATE=0; NFAILED=0; CHANGED=""
-      while read DIR URL; do
-         RESULT=""
-         if pull "$DIR" "$URL"; then
-            [ "$RESULT" = "up-to-date" ] \
-               && NUPTODATE=$((NUPTODATE+1)) \
-               || CHANGED="${CHANGED:+$CHANGED, }**${DIR##*/}** $RESULT"
-         else
-            NFAILED=$((NFAILED+1))
-         fi
-      done < <(repos)
-      MSG=`summarize "$CHANGED" $NUPTODATE $NFAILED`
-      if [ $NFAILED -eq 0 ]; then
-         ntfy_send "↓ pull · $HOSTNAME" "arrow_down,white_check_mark" "3" "$MSG"
-         log_desktop "$MSG"
-      else
-         ntfy_send "↓ pull · $HOSTNAME" "arrow_down,warning" "4" "$MSG"
-         log_desktop "$MSG — check journal"
-      fi
-      exit 0
-      ;;
+   push) run_repos push "↑ push" "arrow_up";   exit 0 ;;
+   pull) run_repos pull "↓ pull" "arrow_down"; exit 0 ;;
    status)
       while read DIR URL; do
          status "$DIR"
