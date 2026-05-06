@@ -1,63 +1,29 @@
-# git-hop
+# 🐇 git-hop
 
-Automatically sync your git repositories when you sit down at a machine — and store them when you leave.
+> Sit down. Your repos are already up to date. Get up. Your work is already pushed.
 
-`git-hop` is a systemd service that runs `git pull` at login and `git push` at logout, keeping your repos in sync across all your devices with zero manual effort.
+`git-hop` is a systemd user service that automatically pulls your git repositories at login and pushes them at logout — keeping everything in sync across all your machines with zero manual effort.
 
-## The idea
+## ✨ The idea
 
-You work on one machine at a time. When you arrive, your repos are already up to date. When you leave, your work is safely stored in the remote. No manual commits, no forgetting to push.
+You work on one machine at a time. When you arrive, `git-hop` has already fetched and merged the latest changes. When you leave, it commits whatever you were working on and pushes it safely to the remote. No manual commits. No forgetting to push. No stale code waiting on another machine.
 
-At login, `git-hop` fetches the remote state and brings the local repo up to date (fast-forward, merge, or push pending commits as needed). If a repo in the config is missing locally — for example, on a freshly set up machine — it is cloned automatically. At logout, it commits any local changes and pushes. If there is no network, local work is always committed first — it will be pushed next time.
+At **login**, `git-hop` fetches the remote state and brings each repo up to date — fast-forward, merge, or push pending local commits as needed. Repos that are missing locally (e.g. on a freshly set up machine) are cloned automatically.
 
-This model works best with **exclusive use**: only one of your devices active at a time. Occasional overlap is handled gracefully — `git-hop` will merge where possible and report conflicts clearly.
+At **logout**, it commits any uncommitted changes first — so local work is never lost even without a network — then fetches, merges if needed, and pushes.
 
-## Requirements
+Occasional overlap between devices is handled gracefully: `git-hop` merges where possible and reports conflicts clearly with desktop and push notifications.
 
-- Linux with systemd
-- Git repos with a configured remote (`origin`)
-- SSH key (or credential helper) that allows passwordless push/pull
-- [ntfy](https://ntfy.sh) (optional, for push notifications)
+## 📋 Requirements
 
-## Configuration
+- 🐧 Linux with systemd
+- 🔑 SSH key (or credential helper) for passwordless push/pull
+- 📡 [ntfy](https://ntfy.sh) _(optional)_ — push notifications on your phone or browser
+- 🔔 `libnotify` / `notify-send` _(optional)_ — desktop notifications
 
-### Repos
+## ⚡ Installation
 
-Create `~/.config/git-hop/repos` with one repo per line. Each line is a whitespace-separated `dir url` pair (dir relative to your home directory):
-
-```
-repos/myproject    git@github.com:you/myproject.git
-repos/notes        git@github.com:you/notes.git
-documents/journal  git@github.com:you/journal.git
-```
-
-Repos listed here that don't exist locally are cloned automatically on the next `git-hop pull` — useful when setting up a new machine.
-
-Or use `git-hop add` to register repos from the command line:
-
-```sh
-git-hop add ~/repos/myproject
-```
-
-### Notifications (optional)
-
-To receive push/pull notifications via [ntfy.sh](https://ntfy.sh), set `GITHOP_NTFY_CHANNEL` in `~/.config/git-hop/config`:
-
-```sh
-GITHOP_NTFY_CHANNEL=your-channel-name
-```
-
-Then subscribe to that channel in the ntfy app or browser. Notifications include the hostname and a per-repo summary (e.g. `notes pulled, dotfiles merged | 2 up-to-date`).
-
-Desktop notifications are shown via `notify-send` (requires `libnotify`). They are skipped automatically if `notify-send` is not installed. To disable them explicitly:
-
-```sh
-GITHOP_DESKTOP=no
-```
-
-## Installation
-
-No root required — `git-hop` installs entirely under your home directory as a systemd user service.
+No root required — `git-hop` installs entirely under your home directory.
 
 ```sh
 git clone https://github.com/cbboyan/git-hop.git
@@ -68,19 +34,63 @@ make enable    # enables lingering and starts the service
 
 See [INSTALL.md](INSTALL.md) for troubleshooting and all Makefile targets.
 
-## Commands
+## 🗂️ Adding repos
+
+Register an existing local repo:
 
 ```sh
-git-hop pull              # pull all repos (run at login by the service)
-git-hop push              # commit and push all repos (run at logout by the service)
-git-hop status            # one-line status per repo
-git-hop list              # list configured repos
-git-hop clone <url>       # clone a repo into current dir and add it to the config
-git-hop add <dir>         # add a repo to the config
-git-hop log               # show journal log (accepts journalctl args)
-git-hop service [start|stop|enable|disable|status]  # manage systemd service
+git-hop add ~/repos/myproject
 ```
 
-## License
+Or clone a remote and register it in one step:
+
+```sh
+git-hop clone git@github.com:you/myproject.git
+```
+
+For manual editing, add `dir url` pairs to `~/.config/git-hop/repos` (one per line). The directory can be relative to `$HOME`, prefixed with `~/`, or an absolute path:
+
+```
+repos/myproject    git@github.com:you/myproject.git
+~/repos/notes      git@github.com:you/notes.git
+/opt/myproject     git@github.com:you/other.git
+```
+
+Any repo listed in the config that doesn't exist locally will be cloned automatically on the next login — handy when setting up a new machine.
+
+## 🔔 Notifications
+
+### Desktop
+
+Desktop notifications appear at login and logout via `notify-send` (part of `libnotify`). They are skipped automatically if `notify-send` is not installed. To disable explicitly, set in `~/.config/git-hop/config`:
+
+```sh
+GITHOP_DESKTOP=no
+```
+
+### Phone / browser (ntfy)
+
+To receive notifications on your phone or in the browser via [ntfy.sh](https://ntfy.sh), set your channel in `~/.config/git-hop/config`:
+
+```sh
+GITHOP_NTFY_CHANNEL=your-channel-name
+```
+
+Then subscribe to that channel in the ntfy app or at [ntfy.sh](https://ntfy.sh). Notifications include the hostname and a per-repo summary — e.g. `notes pulled, dotfiles merged | 2 up-to-date`.
+
+## 🛠️ Commands
+
+| Command | Description |
+|---|---|
+| `git-hop pull` | Pull all repos _(run at login by the service)_ |
+| `git-hop push` | Commit and push all repos _(run at logout by the service)_ |
+| `git-hop status` | One-line status for each repo |
+| `git-hop list` | List configured repos |
+| `git-hop add <dir>` | Add an existing repo to the config |
+| `git-hop clone <url>` | Clone a repo and add it to the config |
+| `git-hop log` | Show journal log _(accepts journalctl args)_ |
+| `git-hop service` | Manage the systemd service _(start/stop/enable/disable/status)_ |
+
+## 📄 License
 
 [CC0 1.0 Universal](LICENSE) — public domain, no rights reserved.
