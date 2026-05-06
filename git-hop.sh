@@ -63,6 +63,7 @@ git_check_state() {
              ".git/rebase-merge" ".git/rebase-apply"; do
       [ -e "$F" ] && { log_error "Manual FIX REQUIRED"$'\n'"$1: repo has unfinished git operation: **${REPO##*/}**"; return 1; }
    done
+   return 0
 }
 
 repos() {
