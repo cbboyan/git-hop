@@ -1,21 +1,20 @@
-## done
+# git-hop TODO
 
-- `git-sync` (git-extras) investigated — unrelated, destructively resets branch to remote. Not usable.
-- name: `git-store` taken on GitHub and npm. `git-hop` chosen — clear on all registries.
-- rename: files and references updated from `gitsync` to `git-hop`.
-- config: `~/.config/git-hop/repos`, whitespace-separated `dir url` pairs, parsed with `while read DIR URL`.
-- ntfy channel: `~/.config/git-hop/config` sourced as `KEY=value`; `NTFY_CHANNEL` sets the ntfy topic. Notifications skipped silently if unset.  default `config` file included in repo, copied on install.
-- invariant and sync logic: login = fetch → detect state (even/behind/ahead/diverged) → act; logout = commit first → fetch → detect state → merge if needed → push.  errors logged via `logger -p user.err`, ntfy, and `notify-send` (desktop).  stash on dirty workdir at login.
-- refactor: lowercase function names; `log_info`/`log_err`/`log_ntfy`/`log_desktop` output channels; no underscores except `log_` prefix; `repos()` centralises config parsing; `fetch()` combines git fetch + state detection.
-- log file dropped: interactive output via stderr (`[ -t 2 ]`), persistent record via `logger` to journal.
-- per-repo status and summary: `RESULT` set by `pull`/`push` to `up-to-date`/`pulled`/`pushed`/`merged`; `summarize()` builds message like "notes(pulled), dotfiles(merged) | 2 up-to-date".
-- `add` subcommand: resolves path, validates git repo, extracts origin URL, checks not already in config, appends to `~/.config/git-hop/repos`.
-- `list`, `status` (one-line per repo), `service`, `log` subcommands added.  `status` shows `up-to-date` when clean.
-- Makefile: install/uninstall/enable/stop/disable/status.  `install` copies `git-hop.sh` → `~/.local/bin/git-hop`.  `enable` runs `loginctl enable-linger`.
-- license: CC0 1.0 Universal (public domain).
-- ntfy messages: include hostname, pull vs. push action, per-repo details with result summary.
+## 📌 Should — before public release
 
-## testing — before public release
+_(nothing blocking — ready for public release)_
+
+## 💡 Nice to have
+
+- **network timeout:** on weak wifi, `git fetch` can hang for minutes per repo. Fix with (a) a pre-flight inet check (`nc -zw2 8.8.8.8 53`) to bail early when there's no network, and (b) `timeout N` on `git_fetch` as a safety net. Make check host configurable via `INET_CHECK_HOST` in config. Not blocking — user service runs in background and doesn't delay login.
+
+- **periodic push:** push while running (idle detection or fixed interval, e.g. every hour).
+
+- **suspend/resume support:** push before suspend, pull on resume. `sleep.target` is system-level so the cleanest hook needs root (system service drop-in); rootless alternative is listening on logind D-Bus `PrepareForSleep` signal via a second user service unit (`git-hop-sleep.service`).
+
+- **graphical logout push:** push on graphical logout via `graphical-session-pre.target` (pull on login is already wired to `graphical-session.target`). Useful for setups that log out graphically without rebooting. Would overlap with boot/shutdown service — needs a config flag or separate install target.
+
+## 🧪 Testing — before public release
 
 **Setup tip:** `systemctl --user stop git-hop` prevents the service from auto-running so you can trigger `git-hop pull` / `git-hop push` manually and control timing precisely. To simulate a dirty workdir at boot, stop the service on machine A, make local edits without committing, then reboot (or run `git-hop pull` manually).
 
@@ -34,14 +33,23 @@
 - [ ] local changes, remote ahead, conflicting: same but B edits same lines → expect merge conflict error + ntfy ✓
 - [ ] no network: disconnect before `git-hop push` → expect local commit only + ntfy
 
-## should — before public release
+## ✅ Done
 
-## nice to have
-
-14. network timeout: on weak wifi, `git fetch` can hang for minutes per repo. Fix with (a) a pre-flight inet check (`nc -zw2 8.8.8.8 53`) to bail early when there's no network, and (b) `timeout N` on `git_fetch` as a safety net. Make check host configurable via `INET_CHECK_HOST` in config. Not blocking — user service runs in background and doesn't delay login.
-
-
-
-11. periodic push: push while running (idle detection or fixed interval, e.g. every hour).
-12. suspend/resume support: push before suspend, pull on resume. `sleep.target` is system-level so the cleanest hook needs root (system service drop-in); rootless alternative is listening on logind D-Bus `PrepareForSleep` signal via a second user service unit (`git-hop-sleep.service`).
-13. graphical login/logout support: pull on graphical login via `graphical-session.target`, push on logout via `graphical-session-pre.target`. User-level, no root needed. Useful for setups that don't reboot but log out graphically. Would overlap with boot/shutdown service — needs a config flag or separate install target.
+- **unfinished git operation detection:** `git_check_state()` checks for MERGING, CHERRY-PICKING, REVERTING, and REBASING states before any git operations in pull/push — prevents committing files with conflict markers.
+- **desktop notification styling:** split into summary/body lines; icons (`emblem-default`, `dialog-error`, `dialog-warning`); `-u critical` for errors (stays until dismissed); `-e` transient for normal notifications (no notification center clutter); app name via `-a`; markdown stripped.
+- **desktop notification reliability:** `DBUS_SESSION_BUS_ADDRESS` set in service file; `After=WantedBy=graphical-session.target` so pull runs after the desktop session is up.
+- **desktop notifications configurable:** `GITHOP_DESKTOP=no` to disable; auto-skipped if `notify-send` not installed.
+- **absolute path support:** repo dirs in config can be relative to `$HOME`, prefixed with `~/`, or full absolute paths. `add` stores full path for repos outside `$HOME`.
+- **auto-clone missing repos:** repos in config that don't exist locally are cloned automatically on pull — useful on a freshly set up machine.
+- **`git-sync` investigated** — unrelated (git-extras), destructively resets branch to remote. Not usable.
+- **name:** `git-store` taken on GitHub and npm. `git-hop` chosen — clear on all registries.
+- **rename:** files and references updated from `gitsync` to `git-hop`.
+- **config:** `~/.config/git-hop/repos`, whitespace-separated `dir url` pairs. `~/.config/git-hop/config` sourced as `KEY=value`. Default config included in repo, copied on install only if not already present.
+- **sync logic:** login = stash dirty workdir → fetch → detect state (even/behind/ahead/diverged) → act → pop stash. logout = commit first → fetch → detect state → merge if needed → push. Commit-before-fetch ensures local work is never lost.
+- **error channels:** `logger -p user.err` (journal), ntfy (remote), `notify-send` (desktop).
+- **refactor:** `log_`/`ntfy_`/`git_` function prefixes; `repos()` centralises config parsing; `git_fetch()` combines fetch + state detection; `run_repos()` eliminates duplicated loop; `log_summary()` unifies push/pull notification.
+- **log:** interactive output via stderr (`[ -t 2 ]`), persistent via `logger` to journal.
+- **per-repo results:** `RESULT` set by `pull`/`push` to `up-to-date`/`pulled`/`pushed`/`merged`/`cloned`; `summarize()` builds summary message.
+- **subcommands:** `add`, `list`, `status`, `service`, `log`, `clone`.
+- **Makefile:** `install`/`uninstall`/`enable`/`stop`/`disable`/`status` targets.
+- **license:** CC0 1.0 Universal (public domain).
