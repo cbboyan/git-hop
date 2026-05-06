@@ -34,9 +34,9 @@ log_desktop()  {
    [ "$BODY" = "$1" ] && BODY=""
    HEAD="${HEAD//\*\*/}"
    BODY=`echo "$BODY" | sed 's/\*\*\([^*]*\)\*\*/<b>\1<\/b>/g'`
-   notify-send -a "git-hop" -i "${2:-emblem-default}" "$HEAD" ${BODY:+"$BODY"} 2>/dev/null || true
+   notify-send -a "git-hop" -i "${2:-emblem-default}" ${3:+-u "$3"} "$HEAD" ${BODY:+"$BODY"} 2>/dev/null || true
 }
-log_error()    { local P="${1//\*\*/}"; P="${P//$'\n'/ — }"; log_err "$P"; ntfy_err "$1"; log_desktop "$1" "dialog-error"; }
+log_error()    { local P="${1//\*\*/}"; P="${P//$'\n'/ — }"; log_err "$P"; ntfy_err "$1"; log_desktop "$1" "dialog-error" critical; }
 log_summary()  {
    # log_summary TITLE TAGS CHANGED NUPTODATE NFAILED
    local MSG=`summarize "$3" $4 $5`
@@ -123,14 +123,14 @@ pull() {
          RESULT="pushed"
          ;;
       diverged)
-         git_merge || { log_error "pull: merge conflict in **${REPO##*/}**"$'\n'"Manual FIX REQUIRED"; return 1; }
+         git_merge || { log_error "Manual FIX REQUIRED"$'\n'"pull: merge conflict in **${REPO##*/}**"; return 1; }
          git_push  || { log_err "pull: push failed in $REPO"; return 1; }
          RESULT="merged"
          ;;
    esac
 
    if [ $STASHED -eq 1 ]; then
-      git_unstash || { log_error "pull: stash pop conflict in **${REPO##*/}**"$'\n'"Manual FIX REQUIRED"; return 1; }
+      git_unstash || { log_error "Manual FIX REQUIRED"$'\n'"pull: stash pop conflict in **${REPO##*/}**"; return 1; }
    fi
 
    [ $STASHED -eq 1 ] && [ "$RESULT" = "up-to-date" ] && RESULT="stashed"
@@ -161,7 +161,7 @@ push() {
          RESULT="pushed"
          ;;
       behind|diverged)
-         git_merge || { log_error "push: merge conflict in **${REPO##*/}**"$'\n'"Manual FIX REQUIRED"; return 1; }
+         git_merge || { log_error "Manual FIX REQUIRED"$'\n'"push: merge conflict in **${REPO##*/}**"; return 1; }
          git_push  || { log_err "push: push after merge failed in $REPO"; return 1; }
          RESULT="merged"
          ;;
