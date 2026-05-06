@@ -6,13 +6,14 @@ _(nothing blocking — ready for public release)_
 
 ## 💡 Nice to have
 
-- **service split:** replace the current `git-hop.service` with three focused services, each independently installable:
-  - `git-hop-boot.service` — pull at boot / push at shutdown (`default.target`); for servers and desktops that reboot rather than log out; no desktop notifications (ntfy only)
-  - `git-hop-desktop.service` — pull at graphical login / push at graphical logout (`graphical-session.target`); full desktop notifications; current `git-hop.service` behaviour
-  - `git-hop-suspend.service` — push before suspend / pull on resume; Python D-Bus watcher with `delay` inhibitor lock (see below); works alongside either of the above
-  - Makefile gets `install-boot`, `install-desktop`, `install-suspend` targets (plus `install-all`)
+- **service split:** replace the current `git-hop.service` with four focused services, each independently installable:
+  - `git-hop-power.service` — pull at boot / push at shutdown (`default.target`); for servers and desktops that reboot rather than log out; no desktop notifications (ntfy only)
+  - `git-hop-desktop.service` — pull at first graphical login / push at shutdown (`graphical-session.target` + `RemainAfterExit`); full desktop notifications; current `git-hop.service` behaviour
+  - `git-hop-login.service` — pull on every graphical login / push on every graphical logout; D-Bus watcher (see below) listening for logind session events (`SessionNew`/`SessionRemoved` on `org.freedesktop.login1.Manager`); same Python watcher as suspend, extended to handle both
+  - `git-hop-suspend.service` — push before suspend / pull on resume; Python D-Bus watcher with `delay` inhibitor lock (see below); works alongside any of the above
+  - Makefile gets `install-boot`, `install-desktop`, `install-login`, `install-suspend` targets (plus `install-all`)
 
-- **suspend/resume support** (`git-hop-suspend.service`): `Type=simple` user service running a small Python script that listens for the logind D-Bus `PrepareForSleep` signal and takes a `delay` inhibitor lock before push — guaranteeing suspend waits for push to complete (up to `InhibitDelayMaxSec`, default 5s, configurable in `/etc/systemd/logind.conf`). Requires `python3-dbus` and `python3-gobject`. Shutdown already handled by `ExecStop` — inhibitor only needed for suspend.
+- **suspend/resume + login/logout watcher** (`git-hop-suspend.service`, `git-hop-login.service`): `Type=simple` user services running a Python script that listens for logind D-Bus signals — `PrepareForSleep` for suspend/resume (with `delay` inhibitor lock to guarantee push completes before suspend), and `SessionNew`/`SessionRemoved` for login/logout. Could be one shared watcher script with flags, or two separate scripts. Requires `python3-dbus` and `python3-gobject`. Shutdown already handled by `ExecStop` — inhibitor only needed for suspend.
 
 - **network timeout:** on weak wifi, `git fetch` can hang for minutes per repo. Fix with (a) a pre-flight inet check (`nc -zw2 8.8.8.8 53`) to bail early when there's no network, and (b) `timeout N` on `git_fetch` as a safety net. Make check host configurable via `INET_CHECK_HOST` in config. Not blocking — user service runs in background and doesn't delay login.
 
