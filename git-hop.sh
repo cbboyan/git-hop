@@ -30,10 +30,12 @@ ntfy_send() {
 }
 ntfy_err()    { ntfy_send "⚠ git-hop error · $HOSTNAME" "rotating_light" "5" "$1"; }
 log_desktop()  {
+   [ "${GITHOP_DESKTOP:-yes}" = "no" ] && return
+   command -v notify-send >/dev/null 2>&1 || return
    local HEAD="${1%%$'\n'*}" BODY="${1#*$'\n'}"
    [ "$BODY" = "$1" ] && BODY=""
    HEAD="${HEAD//\*\*/}"
-   BODY=`echo "$BODY" | sed 's/\*\*\([^*]*\)\*\*/<b>\1<\/b>/g'`
+   BODY="${BODY//\*\*/}"
    notify-send -a "git-hop" -i "${2:-emblem-default}" ${3:+-u "$3"} ${4:+-e} "$HEAD" ${BODY:+"$BODY"} 2>/dev/null || true
 }
 log_error()    { local P="${1//\*\*/}"; P="${P//$'\n'/ — }"; log_err "$P"; ntfy_err "$1"; log_desktop "$1" "dialog-error" critical; }

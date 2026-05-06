@@ -3,5 +3,8 @@
 # ntfy.sh channel for push/pull notifications (optional)
 #GITHOP_NTFY_CHANNEL=your-channel
 
+# desktop notifications via notify-send (yes/no, default: yes)
+#GITHOP_DESKTOP=no
+
 # debug log file (optional)
 #GITHOP_DEBUG_LOG=$HOME/git-hop.log
