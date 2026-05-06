@@ -97,6 +97,7 @@ pull() {
       return 0
    fi
    cd "$REPO" || { log_err "pull: repo not found: $REPO"; return 1; }
+   [ -f ".git/MERGE_HEAD" ] && { log_error "Manual FIX REQUIRED"$'\n'"pull: repo is in merging state: **${REPO##*/}**"; return 1; }
 
    local STASHED=0
    if [ -n "`git status --porcelain`" ]; then
@@ -143,6 +144,7 @@ push() {
    local REPO=`resolve_dir "$1"`
    log_info "push: ${REPO##*/} in $1"
    cd "$REPO" || { log_err "push: repo not found: $REPO"; return 1; }
+   [ -f ".git/MERGE_HEAD" ] && { log_error "Manual FIX REQUIRED"$'\n'"push: repo is in merging state: **${REPO##*/}**"; return 1; }
 
    git_add
    if [ -n "`git status --porcelain`" ]; then
