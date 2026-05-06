@@ -29,17 +29,24 @@ ntfy_send() {
       ntfy.sh/$GITHOP_NTFY_CHANNEL >/dev/null 2>&1
 }
 ntfy_err()    { ntfy_send "⚠ git-hop error · $HOSTNAME" "rotating_light" "5" "$1"; }
-log_desktop()  { notify-send "git-hop" "$1" 2>/dev/null || true; }
-log_error()    { PLAIN="${1//\*\*/}"; PLAIN="${PLAIN//$'\n'/ - }"; log_err "$PLAIN"; ntfy_err "$1"; log_desktop "$PLAIN"; }
+log_desktop()  {
+   local HEAD="${1%%$'\n'*}" BODY="${1#*$'\n'}"
+   [ "$BODY" = "$1" ] && BODY=""
+   HEAD="${HEAD//\*\*/}"
+   BODY=`echo "$BODY" | sed 's/\*\*\([^*]*\)\*\*/<b>\1<\/b>/g'`
+   notify-send -a "git-hop" -i "${2:-emblem-default}" "$HEAD" ${BODY:+"$BODY"} 2>/dev/null || true
+}
+log_error()    { local P="${1//\*\*/}"; P="${P//$'\n'/ — }"; log_err "$P"; ntfy_err "$1"; log_desktop "$1" "dialog-error"; }
 log_summary()  {
    # log_summary TITLE TAGS CHANGED NUPTODATE NFAILED
-   MSG=`summarize "$3" $4 $5`
+   local MSG=`summarize "$3" $4 $5`
+   local LABEL="${1#* } done"
    if [ "$5" -eq 0 ]; then
       ntfy_send "$1 · $HOSTNAME" "$2,white_check_mark" "3" "$MSG"
-      log_desktop "$MSG"
+      log_desktop "$LABEL"$'\n'"$MSG"
    else
       ntfy_send "$1 · $HOSTNAME" "$2,warning" "4" "$MSG"
-      log_desktop "$MSG — check journal"
+      log_desktop "$LABEL"$'\n'"$MSG — check journal" "dialog-warning"
    fi
 }
 

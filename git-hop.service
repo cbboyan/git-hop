@@ -1,12 +1,13 @@
 [Unit]
 Description=git-hop: sync git repositories at login/logout
-
+After=graphical-session.target
 
 [Service]
 Type=oneshot
+Environment=DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/%U/bus
 RemainAfterExit=yes
 ExecStart=%h/.local/bin/git-hop pull
 ExecStop=%h/.local/bin/git-hop push
 
 [Install]
-WantedBy=default.target
+WantedBy=graphical-session.target
