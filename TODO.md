@@ -10,7 +10,7 @@ _(nothing blocking — ready for public release)_
 
 - **periodic push:** push while running (idle detection or fixed interval, e.g. every hour).
 
-- **suspend/resume support:** push before suspend, pull on resume. `sleep.target` is system-level so the cleanest hook needs root (system service drop-in); rootless alternative is listening on logind D-Bus `PrepareForSleep` signal via a second user service unit (`git-hop-sleep.service`).
+- **suspend/resume support:** push before suspend, pull on resume. A second `git-hop-sleep.service` (`Type=simple`, user-level) runs a small Python script that listens for the logind D-Bus `PrepareForSleep` signal and takes a `delay` inhibitor lock before push — guaranteeing suspend waits for push to complete (up to `InhibitDelayMaxSec`, default 5s, configurable in `/etc/systemd/logind.conf`). Requires `python3-dbus` and `python3-gobject`. Shutdown is already handled by `ExecStop` in the main service — inhibitor only needed for suspend.
 
 - **graphical logout push:** push on graphical logout via `graphical-session-pre.target` (pull on login is already wired to `graphical-session.target`). Useful for setups that log out graphically without rebooting. Would overlap with boot/shutdown service — needs a config flag or separate install target.
 
