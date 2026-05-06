@@ -58,6 +58,12 @@ git_push()    { git push -q >>"$GITHOP_DEBUG_LOG" 2>&1; }
 git_add()     { git add . >>"$GITHOP_DEBUG_LOG" 2>&1; }
 git_commit()  { git commit -q -a -m "git-hop $USER@$HOSTNAME" >>"$GITHOP_DEBUG_LOG" 2>&1; }
 git_clone()   { git clone -q "$1" "$2" >>"$GITHOP_DEBUG_LOG" 2>&1; }
+git_check_state() {
+   for F in ".git/MERGE_HEAD" ".git/CHERRY_PICK_HEAD" ".git/REVERT_HEAD" \
+             ".git/rebase-merge" ".git/rebase-apply"; do
+      [ -e "$F" ] && { log_error "Manual FIX REQUIRED"$'\n'"$1: repo has unfinished git operation: **${REPO##*/}**"; return 1; }
+   done
+}
 
 repos() {
    grep -Ev '^\s*(#|$)' "$CONF" 2>/dev/null
@@ -97,7 +103,7 @@ pull() {
       return 0
    fi
    cd "$REPO" || { log_err "pull: repo not found: $REPO"; return 1; }
-   [ -f ".git/MERGE_HEAD" ] && { log_error "Manual FIX REQUIRED"$'\n'"pull: repo is in merging state: **${REPO##*/}**"; return 1; }
+   git_check_state pull || return 1
 
    local STASHED=0
    if [ -n "`git status --porcelain`" ]; then
@@ -144,7 +150,7 @@ push() {
    local REPO=`resolve_dir "$1"`
    log_info "push: ${REPO##*/} in $1"
    cd "$REPO" || { log_err "push: repo not found: $REPO"; return 1; }
-   [ -f ".git/MERGE_HEAD" ] && { log_error "Manual FIX REQUIRED"$'\n'"push: repo is in merging state: **${REPO##*/}**"; return 1; }
+   git_check_state push || return 1
 
    git_add
    if [ -n "`git status --porcelain`" ]; then
