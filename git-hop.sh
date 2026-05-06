@@ -34,7 +34,7 @@ log_desktop()  {
    [ "$BODY" = "$1" ] && BODY=""
    HEAD="${HEAD//\*\*/}"
    BODY=`echo "$BODY" | sed 's/\*\*\([^*]*\)\*\*/<b>\1<\/b>/g'`
-   notify-send -a "git-hop" -i "${2:-emblem-default}" ${3:+-u "$3"} "$HEAD" ${BODY:+"$BODY"} 2>/dev/null || true
+   notify-send -a "git-hop" -i "${2:-emblem-default}" ${3:+-u "$3"} ${4:+-e} "$HEAD" ${BODY:+"$BODY"} 2>/dev/null || true
 }
 log_error()    { local P="${1//\*\*/}"; P="${P//$'\n'/ — }"; log_err "$P"; ntfy_err "$1"; log_desktop "$1" "dialog-error" critical; }
 log_summary()  {
@@ -43,10 +43,10 @@ log_summary()  {
    local LABEL="${1#* } done"
    if [ "$5" -eq 0 ]; then
       ntfy_send "$1 · $HOSTNAME" "$2,white_check_mark" "3" "$MSG"
-      log_desktop "$LABEL"$'\n'"$MSG"
+      log_desktop "$LABEL"$'\n'"$MSG" "" "" transient
    else
       ntfy_send "$1 · $HOSTNAME" "$2,warning" "4" "$MSG"
-      log_desktop "$LABEL"$'\n'"$MSG — check journal" "dialog-warning"
+      log_desktop "$LABEL"$'\n'"$MSG — check journal" "dialog-warning" "" transient
    fi
 }
 
