@@ -56,6 +56,14 @@ repos() {
    grep -Ev '^\s*(#|$)' "$CONF" 2>/dev/null
 }
 
+resolve_dir() {
+   case "$1" in
+      /*)  echo "$1" ;;
+      ~/*)  echo "$HOME/${1#~/}" ;;
+      *)   echo "$HOME/$1" ;;
+   esac
+}
+
 git_fetch() {
    git rev-parse @{u} >>"$GITHOP_DEBUG_LOG" 2>&1 || { log_err "no upstream configured in `pwd`"; return 1; }
    git fetch -q >>"$GITHOP_DEBUG_LOG" 2>&1        || { log_err "fetch failed (no network?) in `pwd`"; return 1; }
@@ -70,7 +78,7 @@ git_fetch() {
 }
 
 pull() {
-   local REPO="$HOME/$1"
+   local REPO=`resolve_dir "$1"`
    local URL="$2"
    log_info "pull: ${REPO##*/} in $1"
    if [ ! -d "$REPO" ]; then
@@ -125,7 +133,7 @@ pull() {
 }
 
 push() {
-   local REPO="$HOME/$1"
+   local REPO=`resolve_dir "$1"`
    log_info "push: ${REPO##*/} in $1"
    cd "$REPO" || { log_err "push: repo not found: $REPO"; return 1; }
 
@@ -156,7 +164,7 @@ push() {
 }
 
 status() {
-   REPO="$HOME/$1"
+   REPO=`resolve_dir "$1"`
    cd "$REPO" || { printf "%-40s  ERROR: not found\n" "$1"; return 1; }
    INFO=`git status -sb 2>/dev/null`
    BRANCH=`echo "$INFO" | head -1 | sed 's/^## //'`
@@ -187,7 +195,7 @@ add() {
       || { log_err "add: no origin remote in $REPO"; return 1; }
    case "$REPO" in
       $HOME/*) RELDIR="${REPO#$HOME/}" ;;
-      *) log_err "add: repo must be under $HOME: $REPO"; return 1 ;;
+      *)       RELDIR="$REPO" ;;
    esac
    grep -q "^$RELDIR" "$CONF" 2>/dev/null \
       && { log_err "add: already in config: $RELDIR"; return 1; }
