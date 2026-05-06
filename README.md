@@ -41,13 +41,19 @@ git-hop add ~/repos/myproject
 
 ### Notifications (optional)
 
-To receive push/pull notifications via [ntfy.sh](https://ntfy.sh), set `NTFY_CHANNEL` in `~/.config/git-hop/config`:
+To receive push/pull notifications via [ntfy.sh](https://ntfy.sh), set `GITHOP_NTFY_CHANNEL` in `~/.config/git-hop/config`:
 
 ```sh
-NTFY_CHANNEL=your-channel-name
+GITHOP_NTFY_CHANNEL=your-channel-name
 ```
 
-Then subscribe to that channel in the ntfy app or browser. Notifications include the hostname and a per-repo summary (e.g. `notes(pulled), dotfiles(merged) | 2 up-to-date`).
+Then subscribe to that channel in the ntfy app or browser. Notifications include the hostname and a per-repo summary (e.g. `notes pulled, dotfiles merged | 2 up-to-date`).
+
+Desktop notifications are shown via `notify-send` (requires `libnotify`). They are skipped automatically if `notify-send` is not installed. To disable them explicitly:
+
+```sh
+GITHOP_DESKTOP=no
+```
 
 ## Installation
 
