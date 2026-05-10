@@ -91,6 +91,27 @@ Then subscribe to that channel in the ntfy app or at [ntfy.sh](https://ntfy.sh).
 | `git-hop log` | Show journal log _(accepts journalctl args)_ |
 | `git-hop service` | Manage the systemd service _(start/stop/enable/disable/status)_ |
 
+## 📝 Changelog
+
+### v0.9.1
+- Added: auto-clone repos missing locally (e.g. fresh machine setup)
+- Added: `clone` subcommand
+- Added: support for `~/` and absolute paths in repos config
+- Added: desktop notifications with icon, app name, transient flag, graphical session detection, and `GITHOP_DESKTOP` config option
+- Added: detect unfinished git operations (merge, rebase, cherry-pick) before acting
+- Added: `service` subcommand supports start/stop/enable/disable (not just status)
+- Added: `log` shows current boot only by default
+- Fixed: no-network login showed a false success notification (bash `local var=$(cmd)` always exits 0)
+- Improved: notification says "no network" instead of "check journal" when offline
+- Improved: warning notifications persist in the tray until dismissed
+
+### v0.9.0 — initial release
+- Pull at login: stash dirty workdir, fetch, fast-forward / merge / push as needed
+- Push at logout: commit first (local work never lost), fetch, merge if needed, push
+- Push notifications via [ntfy](https://ntfy.sh)
+- Basic desktop notification via `notify-send`
+- Subcommands: `pull`, `push`, `status`, `list`, `add`, `service`, `log`
+
 ## 📄 License
 
 [CC0 1.0 Universal](LICENSE) — public domain, no rights reserved.

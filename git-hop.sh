@@ -40,7 +40,7 @@ log_desktop()  {
 }
 log_error()    { local P="${1//\*\*/}"; P="${P//$'\n'/ — }"; log_err "$P"; ntfy_err "$1"; log_desktop "$1" "dialog-error" critical; }
 log_summary()  {
-   # log_summary TITLE TAGS CHANGED NUPTODATE NFAILED
+   # log_summary TITLE TAGS CHANGED NUPTODATE NFAILED SUFFIX
    local MSG=`summarize "$3" $4 $5`
    local LABEL="${1#* } done"
    if [ "$5" -eq 0 ]; then
@@ -48,7 +48,7 @@ log_summary()  {
       log_desktop "$LABEL"$'\n'"$MSG" "" "" transient
    else
       ntfy_send "$1 · $HOSTNAME" "$2,warning" "4" "$MSG"
-      log_desktop "$LABEL"$'\n'"$MSG — check journal" "dialog-warning" "" transient
+      log_desktop "$LABEL"$'\n'"$MSG — ${6:-check journal}" "dialog-warning"
    fi
 }
 
@@ -114,9 +114,10 @@ pull() {
       STASHED=1
    fi
 
-   local STATE=`git_fetch` || {
+   local STATE
+   STATE=`git_fetch` || {
       [ $STASHED -eq 1 ] && git_unstash
-      return 1
+      RESULT="no-network"; return 1
    }
    log_info "pull: ${REPO##*/} is $STATE"
 
@@ -160,7 +161,8 @@ push() {
       git_commit || { log_err "push: commit failed in $REPO"; return 1; }
    fi
 
-   local STATE=`git_fetch` || { log_err "no network — changes committed locally in $REPO"; return 1; }
+   local STATE
+   STATE=`git_fetch` || { log_err "no network — changes committed locally in $REPO"; RESULT="no-network"; return 1; }
    log_info "push: ${REPO##*/} is $STATE"
 
    case $STATE in
@@ -224,7 +226,7 @@ add() {
 
 run_repos() {
    # run_repos FN TITLE TAGS
-   local NUPTODATE=0 NFAILED=0 CHANGED=""
+   local NUPTODATE=0 NFAILED=0 CHANGED="" NONET=0 ERRS=0
    while read DIR URL; do
       RESULT=""
       if "$1" "$DIR" "$URL"; then
@@ -233,9 +235,13 @@ run_repos() {
             || CHANGED="${CHANGED:+$CHANGED, }**${DIR##*/}** $RESULT"
       else
          NFAILED=$((NFAILED+1))
+         [ "$RESULT" = "no-network" ] && NONET=1 || ERRS=1
       fi
    done < <(repos)
-   log_summary "$2" "$3" "$CHANGED" $NUPTODATE $NFAILED
+   local SUFFIX=""
+   [ $NONET -eq 1 ] && SUFFIX="no network"
+   [ $ERRS  -eq 1 ] && SUFFIX="${SUFFIX:+$SUFFIX, }check journal"
+   log_summary "$2" "$3" "$CHANGED" $NUPTODATE $NFAILED "$SUFFIX"
 }
 
 summarize() {
