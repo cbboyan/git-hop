@@ -97,13 +97,11 @@ Then subscribe to that channel in the ntfy app or at [ntfy.sh](https://ntfy.sh).
 - Added: auto-clone repos missing locally (e.g. fresh machine setup)
 - Added: `clone` subcommand
 - Added: support for `~/` and absolute paths in repos config
-- Added: desktop notifications with icon, app name, transient flag, graphical session detection, and `GITHOP_DESKTOP` config option
+- Added: desktop notifications with icon, app name, graphical session detection, and `GITHOP_DESKTOP` config option
 - Added: detect unfinished git operations (merge, rebase, cherry-pick) before acting
-- Added: `service` subcommand supports start/stop/enable/disable (not just status)
-- Added: `log` shows current boot only by default
-- Fixed: no-network login showed a false success notification (bash `local var=$(cmd)` always exits 0)
+- Added: `service` subcommand supports start/stop/enable/disable
+- Fixed: no-network login showed a false success notification
 - Improved: notification says "no network" instead of "check journal" when offline
-- Improved: warning notifications persist in the tray until dismissed
 
 ### v0.9.0 — initial release
 - Pull at login: stash dirty workdir, fetch, fast-forward / merge / push as needed

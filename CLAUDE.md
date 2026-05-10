@@ -15,6 +15,14 @@ Public GitHub repo. Previously named `gitsync`, renamed to `git-hop`.
 - `INSTALL.md` — installation and troubleshooting
 - `TODO.md` — active TODO list
 
+## Changelog
+
+- Maintained in `README.md` under `## 📝 Changelog`, newest version first.
+- Each release has a `### vX.Y.Z` heading; initial release appends `— initial release`.
+- Entries use `Added:` / `Fixed:` / `Improved:` prefixes. Keep only significant features and fixes — omit minor details.
+- When making changes between releases, add an `### Unreleased` section at the top and accumulate entries there. On release, rename it to the version heading.
+- Version is tracked via git tags (`vX.Y.Z`) — no version variable in the source. Tags are pushed explicitly with `git push origin vX.Y.Z`. Version is bumped occasionally, not on every commit; patch for fixes/small improvements, minor for notable feature additions.
+
 ## Subcommands
 
 `pull`, `push`, `status`, `list`, `add <dir>`, `service`, `log`
