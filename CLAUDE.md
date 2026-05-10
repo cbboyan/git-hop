@@ -30,7 +30,7 @@ Public GitHub repo. Previously named `gitsync`, renamed to `git-hop`.
 ## Configuration
 
 - `~/.config/git-hop/repos` — `dir url` pairs, whitespace-separated, dir relative to `$HOME`; blank lines and `#` comments ignored
-- `~/.config/git-hop/config` — sourced as shell `KEY=value`; `NTFY_CHANNEL` sets ntfy topic
+- `~/.config/git-hop/config` — sourced as shell `KEY=value`; `GITHOP_NTFY_CHANNEL` sets ntfy topic
 
 ## Design decisions
 
