@@ -25,7 +25,7 @@ Public GitHub repo. Previously named `gitsync`, renamed to `git-hop`.
 
 ## Subcommands
 
-`pull`, `push`, `status`, `list`, `add <dir>`, `service`, `log`
+`pull`, `push`, `status`, `list`, `add <dir>`, `clone <url>`, `service`, `log`
 
 ## Configuration
 
